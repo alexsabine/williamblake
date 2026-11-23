@@ -110,12 +110,15 @@ section{padding:clamp(52px,8vw,108px) 0;border-bottom:1px solid var(--hair)}
 .about p{max-width:36em}
 .vow{font:italic 400 clamp(21px,2.5vw,26px)/1.38 var(--fell);color:var(--rust);margin:0 0 1em}
 
-footer{background:var(--night);color:rgba(241,223,174,.78);padding:clamp(34px,5vw,56px) 0 clamp(30px,4vw,44px);font-size:15px;line-height:1.55}
+footer{position:relative;overflow:hidden;isolation:isolate;background:var(--night);color:rgba(241,223,174,.78);padding:clamp(34px,5vw,56px) 0 clamp(30px,4vw,44px);font-size:15px;line-height:1.55}
 footer a{color:var(--pale);text-decoration-color:rgba(224,189,98,.5)}
 footer a:hover{color:#fff}
 .foot{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(22px,5vw,64px);align-items:start}
 .who{display:flex;gap:16px;align-items:flex-start}
-.who img{width:54px;height:54px;flex:none;display:block}
+.who img{width:54px;height:54px;display:block;transition:opacity .25s}
+#orb{flex:none;width:54px;height:54px;border-radius:50%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}#orb.held{cursor:grabbing}#orb.lit img{opacity:0}#orb:focus-visible{outline:2px solid var(--leaf);outline-offset:5px}
+#fount{position:absolute;inset:0;width:100%;height:100%;z-index:-1;display:block;pointer-events:none}
+footer.awake .wrap{text-shadow:0 1px 7px rgba(16,22,28,.95),0 0 2px rgba(16,22,28,.9)}
 .who strong{display:block;font:400 26px/1.1 var(--fell);color:#fff8e6;margin-bottom:6px}
 .sites{list-style:none;margin:0;padding:0;display:grid;gap:7px}
 .sites .caps{color:var(--leaf);margin-bottom:6px;font-size:13px}
@@ -240,10 +243,10 @@ From Single vision &amp; Newtons sleep<cite>Letter to Thomas Butts · 1802</cite
 </div></section>
 </main>
 
-<footer><div class="wrap">
+<footer id="foot"><canvas id="fount" aria-hidden="true"></canvas><div class="wrap">
   <div class="foot">
     <div class="who">
-      <img src="img/ball.png" alt="" width="54" height="54">
+      <div id="orb" tabindex="0" role="img" aria-label="The sphere. It can be turned by hand, or with the arrow keys."><img src="img/ball.png" alt="" width="54" height="54" draggable="false"></div>
       <div><strong>Alexander Sabine</strong><a href="mailto:info@honami.co.uk">info@honami.co.uk</a></div>
     </div>
     <ul class="sites">
@@ -301,6 +304,77 @@ From Single vision &amp; Newtons sleep<cite>Letter to Thomas Butts · 1802</cite
   document.addEventListener('visibilitychange',function(){on=!document.hidden;if(on&&!still&&!raf)raf=requestAnimationFrame(frame)});
   // the plate leans a very little toward the pointer
   if(!still&&window.matchMedia('(hover:hover)').matches)box.addEventListener('pointermove',function(ev){var r=mount.getBoundingClientRect(),x=(ev.clientX-(r.left+r.width/2))/window.innerWidth,y=(ev.clientY-(r.top+r.height/2))/window.innerHeight;mount.style.setProperty('--ry',(x*5).toFixed(2)+'deg');mount.style.setProperty('--rx',(-y*4).toFixed(2)+'deg')});
+})();
+</script>
+<script>
+/* The sphere in the footer can be spun. Nothing happens until it is touched. A light spin sends faint rings out from behind it;
+   kept up hard, the colours of Albion Rose rise through the whole footer. The drawing code only starts on the first touch. */
+(function(){
+  'use strict';
+  var orb=document.getElementById('orb'),foot=document.getElementById('foot'),cv=document.getElementById('fount'),still=matchMedia('(prefers-reduced-motion: reduce)').matches,gl=null,U={},ready=false,dead=false;
+  var O=[1,0,0,0,Math.cos(.32),Math.sin(.32),0,-Math.sin(.32),Math.cos(.32)],w=[0,0,0],hold=null,bR=27,flow=0,drag=0,play=0,soft=0,t=20,last=0,raf=0,vis=true;
+  var VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+  var FS='precision highp float;uniform vec2 R,C;uniform float G,T,S;uniform vec3 Q;uniform mat3 M;'+
+    'float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}'+
+    'vec3 side(float a){vec3 blue=vec3(.15,.29,.60),sky=vec3(.42,.52,.74),lilac=vec3(.66,.52,.66),coral=vec3(.90,.50,.36),red=vec3(.72,.28,.24),rose=vec3(.93,.60,.62),fan=vec3(.98,.84,.78),peach=vec3(.97,.72,.56),amber=vec3(.80,.54,.24),blush=vec3(.95,.66,.70);'+
+    'float t=fract(a/6.2832+1.);vec3 c=blush;c=mix(c,blue,smoothstep(.03,.09,t));c=mix(c,sky,smoothstep(.13,.19,t));c=mix(c,lilac,smoothstep(.20,.26,t));c=mix(c,coral,smoothstep(.29,.36,t));c=mix(c,red,smoothstep(.42,.50,t));c=mix(c,rose,smoothstep(.54,.62,t));c=mix(c,fan,smoothstep(.66,.74,t));c=mix(c,peach,smoothstep(.78,.84,t));c=mix(c,amber,smoothstep(.86,.91,t));c=mix(c,blush,smoothstep(.95,1.,t));return c;}'+
+    'void main(){vec2 p=gl_FragCoord.xy;float un=.5*max(R.x,R.y);vec2 d=(p-C)/un;float r=length(d),a=atan(d.y,d.x);a+=Q.y*exp(-r*5.5);'+
+    'vec2 dn=d/max(r,.0001);float wave=sin(r*64.-Q.x*2.2+n(dn*2.2+2.)*4.)*smoothstep(.0,.03,r);'+
+    'float w1=n(dn*2.6+vec2(r*5.-Q.x*.7,3.)),w2=n(dn*4.1-vec2(1.7,r*7.-Q.x*.9)),w3=n(dn*7.3+vec2(r*11.-Q.x*1.3,9.)),w4=n(dn*13.+vec2(4.,r*19.-Q.x*1.9));float liq=Q.z*smoothstep(.0,.05,r);'+
+    'float rl=r+liq*((w1-.5)*.17+(w3-.5)*.06+(w4-.5)*.025)+wave*.006*(1.+Q.z*6.),al=a+liq*((w2-.5)+(w3-.5)*.3);vec2 dl=vec2(cos(al),sin(al));float ray=n(dl*3.4+vec2(T*.03,1.))*.6+n(dl*10.-vec2(T*.02,4.))*.4;'+
+    /* faint gold rings, for a light spin */
+    'float ring=S*(.5+.5*wave)*exp(-r*7.5)*.36;vec3 col=vec3(.88,.74,.38)*ring;float A=ring;'+
+    /* the fountain, for a hard one: it reaches further the longer it is kept up */
+    'float reach=mix(.05,1.3,Q.z),rr=rl/reach*(1.-.18*ray);vec3 s=side(al);vec3 c=mix(vec3(1.,.965,.80),vec3(.96,.80,.46),smoothstep(.04,.18,rr));c=mix(c,mix(vec3(.97,.72,.70),s,.7),smoothstep(.14,.34,rr));c=mix(c,s,smoothstep(.28,.52,rr));c*=1.+wave*.05*(1.+Q.z*3.);'+
+    'float fa=smoothstep(.0,.06,Q.z)*smoothstep(1.,.2,rr)*(.45+.55*ray)*.84;col=col*(1.-fa)+c*fa;A=A*(1.-fa)+fa;'+
+    /* the sphere itself: a skin of soft cells, light running along the edges where two of them meet */
+    'vec2 g=(p-C)/G;float gr=length(g);if(gr<1.){float z=sqrt(1.-gr*gr);vec3 q=M*vec3(g,z);'+
+    'vec3 pp=q*3.1,ip=floor(pp),fp=fract(pp);float f1=9.,f2=9.;vec3 id=vec3(0.);for(int i=-1;i<=1;i++)for(int j=-1;j<=1;j++)for(int k=-1;k<=1;k++){vec3 o=vec3(float(i),float(j),float(k));vec3 cc=ip+o;vec3 hh=vec3(h(cc.xy+cc.z*7.3),h(cc.yz+cc.x*3.1),h(cc.zx+cc.y*5.7));vec3 jit=.5+.36*sin(T*.22+6.283*hh);float dd=length(o+jit-fp);if(dd<f1){f2=f1;f1=dd;id=hh;}else if(dd<f2){f2=dd;}}'+
+    'float e=f2-f1,edge=smoothstep(.13,.0,e),line=smoothstep(.05,.0,e),rim=smoothstep(1.,.92,gr);'+
+    'vec3 k1=vec3(.95,.89,.70),k2=vec3(.88,.72,.38),k3=vec3(.90,.72,.66),k4=vec3(.70,.32,.25),k5=vec3(.16,.30,.58),k6=vec3(.36,.46,.60),k7=vec3(.72,.50,.24);vec3 cell=id.x<.22?k1:id.x<.38?k2:id.x<.56?k3:id.x<.70?k4:id.x<.82?k5:id.x<.92?k6:k7;cell=mix(cell,vec3(1.,.96,.84),.10+.12*id.y)*(.88+.12*z);'+
+    'float run=.5+.5*sin(T*.7+id.z*9.+e*18.+q.y*3.);vec3 glow=mix(vec3(1.,.95,.84),vec3(1.,.99,.95),run);vec3 sc=mix(cell,glow,edge*(.45+.4*run));sc=mix(sc,vec3(1.,.99,.95),line*(.35+.5*run));sc+=vec3(1.,.95,.86)*pow(1.-z,2.5)*.22;'+
+    'col=mix(col,sc,rim);A=mix(A,1.,rim);}else{float ha=exp(-(gr-1.)*5.)*.16*clamp(S+Q.z,0.,1.);col+=vec3(1.,.96,.86)*ha;A+=ha;}'+
+    'gl_FragColor=vec4(col,clamp(A,0.,1.));}';
+  function init(){
+    if(ready||dead)return ready;
+    try{gl=cv.getContext('webgl',{antialias:true,alpha:true,premultipliedAlpha:true,powerPreference:'low-power'})}catch(e){}
+    if(!gl){dead=true;return false}
+    function sh(ty,src){var o=gl.createShader(ty);gl.shaderSource(o,src);gl.compileShader(o);return gl.getShaderParameter(o,gl.COMPILE_STATUS)?o:null}
+    var a=sh(gl.VERTEX_SHADER,VS),b=sh(gl.FRAGMENT_SHADER,FS);if(!a||!b){dead=true;return false}
+    var pr=gl.createProgram();gl.attachShader(pr,a);gl.attachShader(pr,b);gl.linkProgram(pr);if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){dead=true;return false}
+    gl.useProgram(pr);gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);var loc=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    ['R','C','G','T','S','Q','M'].forEach(function(k){U[k]=gl.getUniformLocation(pr,k)});gl.clearColor(0,0,0,0);
+    ready=true;size();orb.classList.add('lit');
+    addEventListener('resize',function(){size();kick()});document.addEventListener('visibilitychange',kick);
+    if('IntersectionObserver' in window)new IntersectionObserver(function(es){vis=es[0].isIntersecting;kick()}).observe(foot);
+    return true;
+  }
+  function size(){var r=foot.getBoundingClientRect(),o=orb.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,1.5);cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(U.R,cv.width,cv.height);bR=o.width/2;gl.uniform2f(U.C,(o.left-r.left+bR)*d,(r.bottom-o.top-bR)*d);gl.uniform1f(U.G,bR*d)}
+  function turn(ax,ay,az){var th=Math.hypot(ax,ay,az);if(th<1e-7)return;var x=ax/th,y=ay/th,z=az/th,c=Math.cos(th),sn=Math.sin(th),k=1-c,r=[c+x*x*k,x*y*k-z*sn,x*z*k+y*sn,y*x*k+z*sn,c+y*y*k,y*z*k-x*sn,z*x*k-y*sn,z*y*k+x*sn,c+z*z*k],o=O,m=[];
+    for(var i=0;i<3;i++)for(var j=0;j<3;j++)m[i*3+j]=r[i*3]*o[j]+r[i*3+1]*o[3+j]+r[i*3+2]*o[6+j];
+    var a0=Math.hypot(m[0],m[1],m[2]);m[0]/=a0;m[1]/=a0;m[2]/=a0;var dd=m[0]*m[3]+m[1]*m[4]+m[2]*m[5];m[3]-=dd*m[0];m[4]-=dd*m[1];m[5]-=dd*m[2];var a1=Math.hypot(m[3],m[4],m[5]);m[3]/=a1;m[4]/=a1;m[5]/=a1;m[6]=m[1]*m[5]-m[2]*m[4];m[7]=m[2]*m[3]-m[0]*m[5];m[8]=m[0]*m[4]-m[1]*m[3];O=m}
+  function spin(dt){var i;
+    if(hold){var k=1-Math.exp(-dt*7),age=(performance.now()-hold.t)/1000,f=age>.12?0:1;for(i=0;i<3;i++)w[i]+=(hold.v[i]*f-w[i])*k}
+    else{var dr=Math.exp(-dt*.34);for(i=0;i<3;i++)w[i]*=dr}
+    var sp=Math.hypot(w[0],w[1],w[2]);if(sp>16)for(i=0;i<3;i++)w[i]*=16/sp;turn(w[0]*dt,w[1]*dt,w[2]*dt)}
+  function frame(now){raf=0;var dt=Math.min(.05,(now-last)/1000||0);last=now;t+=dt;spin(dt);var spd=Math.hypot(w[0],w[1],w[2]);
+    var x=Math.max(0,Math.min(1,(spd-6.5)/8.5)),want=x*x*(3-2*x);play+=(want-play)*Math.min(1,dt*(want>play?.8:.45));
+    var sw=Math.min(1,spd/4.5);soft+=(sw-soft)*Math.min(1,dt*(sw>soft?2.5:.7));
+    flow+=dt*(.55+2.4*Math.min(1,spd/5)+3.2*play);drag+=((Math.max(-.5,Math.min(.5,w[2]*.09+w[1]*.03))*(1+1.2*play))-drag)*Math.min(1,dt*1.5);
+    foot.classList.toggle('awake',play>.04);
+    gl.uniform3f(U.Q,flow,drag,play);gl.uniform1f(U.S,soft);gl.uniform1f(U.T,t);gl.uniformMatrix3fv(U.M,false,[O[0],O[1],O[2],O[3],O[4],O[5],O[6],O[7],O[8]]);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,3);
+    /* it comes to rest, and the page is quiet again */
+    if(vis&&!document.hidden&&(hold||spd>.015||play>.002||soft>.004))raf=requestAnimationFrame(frame)}
+  function kick(){if(ready&&!raf){last=performance.now();raf=requestAnimationFrame(frame)}}
+  orb.addEventListener('pointerdown',function(e){if(!init())return;orb.setPointerCapture(e.pointerId);hold={x:e.clientX,y:e.clientY,t:performance.now(),v:[0,0,0]};orb.classList.add('held');e.preventDefault();kick()});
+  orb.addEventListener('pointermove',function(e){if(!hold)return;var now=performance.now(),dt=Math.max(.008,(now-hold.t)/1000),dx=e.clientX-hold.x,dy=e.clientY-hold.y,b=orb.getBoundingClientRect(),ox=(e.clientX-b.left-bR)/bR,oy=(e.clientY-b.top-bR)/bR,edge=Math.min(1,ox*ox+oy*oy);
+    var vx=dy/bR/dt*(1-.6*edge),vy=dx/bR/dt*(1-.6*edge),vz=(ox*dy-oy*dx)/bR/dt*edge*-1;
+    if(still){turn(dy/bR,dx/bR,0);hold.x=e.clientX;hold.y=e.clientY;hold.t=now;kick();return}
+    hold.v=[hold.v[0]*.5+vx*.5,hold.v[1]*.5+vy*.5,hold.v[2]*.5+vz*.5];hold.x=e.clientX;hold.y=e.clientY;hold.t=now});
+  function drop(){if(!hold)return;hold=null;orb.classList.remove('held');kick()}
+  orb.addEventListener('pointerup',drop);orb.addEventListener('pointercancel',drop);orb.addEventListener('lostpointercapture',drop);
+  orb.addEventListener('keydown',function(e){var m={ArrowLeft:[0,-2.4,0],ArrowRight:[0,2.4,0],ArrowUp:[-2.4,0,0],ArrowDown:[2.4,0,0]}[e.key];if(!m||!init())return;e.preventDefault();if(still)turn(m[0]*.12,m[1]*.12,0);else for(var i=0;i<3;i++)w[i]+=m[i];kick()});
+  window.__orb={state:function(){return {ready:ready,dead:dead,play:play,soft:soft,spd:Math.hypot(w[0],w[1],w[2]),running:!!raf}},push:function(v){if(init()){w=v;kick()}}};
 })();
 </script>
 </body>
