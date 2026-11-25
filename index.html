@@ -120,6 +120,9 @@ footer{position:relative;overflow:hidden;isolation:isolate;background:var(--nigh
 footer a{color:var(--pale);text-decoration-color:rgba(224,189,98,.5)}
 footer a:hover{color:#fff}
 .foot{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(22px,5vw,64px);align-items:start}
+.string{margin:0 0 clamp(30px,5vw,54px);padding:0 0 clamp(26px,4vw,40px);border-bottom:1px solid rgba(224,189,98,.22);font:italic 400 clamp(21px,2.6vw,29px)/1.42 var(--fell);color:var(--pale)}
+.string span{display:block}.string .in{padding-left:1.4em}
+.string cite{display:block;margin-top:12px;font:400 13px/1.3 var(--caps);letter-spacing:.12em;color:rgba(241,223,174,.66);font-style:normal}
 .who{display:flex;gap:16px;align-items:flex-start}
 .who img{width:54px;height:54px;display:block;transition:opacity .25s}
 #orb{flex:none;width:54px;height:54px;border-radius:50%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}#orb.held{cursor:grabbing}#orb.lit img{opacity:0}#orb:focus-visible{outline:2px solid var(--leaf);outline-offset:5px}
@@ -261,6 +264,7 @@ From Single vision &amp; Newtons sleep<cite>Letter to Thomas Butts · 1802</cite
 </main>
 
 <footer id="foot"><canvas id="fount" aria-hidden="true"></canvas><div class="wrap">
+  <blockquote class="string"><span>I give you the end of a golden string,</span><span class="in">Only wind it into a ball:</span><span>It will lead you in at Heavens gate,</span><span class="in">Built in Jerusalems wall.</span><cite>Jerusalem · plate 77</cite></blockquote>
   <div class="foot">
     <div class="who">
       <div id="orb" tabindex="0" role="img" aria-label="The sphere. It can be turned by hand, or with the arrow keys."><img src="img/ball.png" alt="" width="54" height="54" draggable="false"></div>
